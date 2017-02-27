@@ -152,9 +152,9 @@ POTFITSRC	+= potential_input_f5.c
 ifneq (,$(strip $(findstring pair,${MAKETARGET})))
   ifneq (,$(strip $(findstring ang,${MAKETARGET})))
     ifneq (,$(strip $(findstring coulomb,${MAKETARGET})))
-      POTFITSRC	+= force_pair_ang_elstat.c
+      POTFITSRC	+= force_pairang_elstat.c
     else
-      POTFITSRC	+= force_pair_ang.c
+      POTFITSRC	+= force_pairang.c
     endif
   else
     POTFITSRC	+= force_pair.c
