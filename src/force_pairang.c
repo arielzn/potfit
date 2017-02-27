@@ -31,7 +31,7 @@
  ****************************************************************/
 
 #if !defined(ANG)
-#error force_pair_ang.c compiled without ANG support
+#error force_pairang.c compiled without ANG support
 #endif
 
 #include "potfit.h"
@@ -158,7 +158,7 @@ double calc_forces(double* xi_opt, double* forces, int flag)
 
   /* This is the start of an infinite loop */
   while (1) {
-    /* Reset 
+    /* Reset
        error_sum = Sum of all the forces, energies and constraints
         */
     error_sum = 0.0;
@@ -253,7 +253,7 @@ double calc_forces(double* xi_opt, double* forces, int flag)
         } /* i */
         /* END OF FIRST LOOP */
 
-        /* SECOND LOOP: Calculate pair forces and energies, atomic densities */
+        /* SECOND LOOP: Calculate pair forces and energies */
         for (i = 0; i < g_config.inconf[h]; i++) {
           /* Set pointer to temp atom pointer */
           atom = g_config.conf_atoms +
@@ -514,7 +514,6 @@ double calc_forces(double* xi_opt, double* forces, int flag)
                        dsquare(forces[stresses + i]);
         }
 #endif  // STRESS
-
       } /* END MAIN LOOP OVER CONFIGURATIONS */
     }
 

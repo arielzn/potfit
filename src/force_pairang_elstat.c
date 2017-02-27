@@ -125,7 +125,6 @@ double calc_forces(double* xi_opt, double* forces, int flag)
   double charge[g_param.ntypes];
   double sum_charges;
   double dp_kappa;
-  apot_table_t* apt = &g_pot.apot_table;
   int self;
   double fnval, grad, fnval_tail, grad_tail, grad_i, grad_j;
   int type1, type2;
@@ -174,7 +173,7 @@ double calc_forces(double* xi_opt, double* forces, int flag)
 
   /* This is the start of an infinite loop */
   while (1) {
-    /* Reset 
+    /* Reset
        error_sum = Sum of all the forces, energies and constraints
         */
     error_sum = 0.0;
@@ -213,13 +212,13 @@ double calc_forces(double* xi_opt, double* forces, int flag)
     for (i = 0; i < g_param.ntypes - 1; i++) {
       if (xi_opt[2 * size + ne + i]) {
         charge[i] = xi_opt[2 * size + ne + i];
-        sum_charges += apt->ratio[i] * charge[i];
+        sum_charges += g_pot.apot_table.ratio[i] * charge[i];
       } else {
         charge[i] = 0.0;
       }
     }
-    apt->last_charge = -sum_charges / apt->ratio[g_param.ntypes - 1];
-    charge[g_param.ntypes - 1] = apt->last_charge;
+    g_pot.apot_table.last_charge = -sum_charges / g_pot.apot_table.ratio[g_param.ntypes - 1];
+    charge[g_param.ntypes - 1] = g_pot.apot_table.last_charge;
     if (xi_opt[2 * size + ne + g_param.ntypes - 1]) {
       dp_kappa = xi_opt[2 * size + ne + g_param.ntypes - 1];
     } else {
@@ -354,7 +353,7 @@ double calc_forces(double* xi_opt, double* forces, int flag)
 
             /* calculate monopole forces */
             /* updating tail-functions - only necessary with variing kappa */
-            if (!apt->sw_kappa)
+            if (!g_pot.apot_table.sw_kappa)
 #if defined(DSF)
             elstat_dsf(neigh_j->r, dp_kappa, &neigh_j->fnval_el,
                             &neigh_j->grad_el, &neigh_j->ggrad_el);
@@ -645,8 +644,8 @@ double calc_forces(double* xi_opt, double* forces, int flag)
                        dsquare(forces[stresses + i]);
         }
 #endif  // STRESS
-       }
-      } /* END MAIN LOOP OVER CONFIGURATIONS */
+      }
+    } /* END MAIN LOOP OVER CONFIGURATIONS */
 
 /* dummy constraints (global) */
 #if defined(APOT)
