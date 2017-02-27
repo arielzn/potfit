@@ -1281,7 +1281,7 @@ void init_angles(config_state* cstate)
         int col =
             2 * g_calc.paircol + 2 * g_param.ntypes + g_config.atoms[i].type;
 #elif defined(ANG)
-        int col = 4 * g_calc.paircol + g_param.ntypes + g_config.atoms[i].type;
+        int col = 2 * g_calc.paircol + g_config.atoms[i].type;
 #endif // MEAM
         if (g_pot.format_type == POTENTIAL_FORMAT_ANALYTIC ||
             g_pot.format_type == POTENTIAL_FORMAT_TABULATED_EQ_DIST) {
@@ -1295,7 +1295,8 @@ void init_angles(config_state* cstate)
           }
 
 #if defined(ANG)
-	/* to be safe in the case fp issues might return slightly highe value */
+	/* for safety in the case FP rounding might cause 
+	   a slight higher value */
         if (ccos > 1.0) {
           ccos = 1.0;
         }
