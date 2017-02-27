@@ -158,7 +158,7 @@ double calc_forces(double* xi_opt, double* forces, int flag)
 
   /* This is the start of an infinite loop */
   while (1) {
-    /* Reset tmpsum and rho_sum_loc
+    /* Reset 
        error_sum = Sum of all the forces, energies and constraints
         */
     error_sum = 0.0;
