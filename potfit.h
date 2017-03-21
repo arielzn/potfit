@@ -56,9 +56,9 @@
 #include "random.h"
 
 /* general flag for threebody potentials (MEAM, Tersoff, SW, ...) */
-#if defined MEAM || defined STIWEB || defined TERSOFF
+#if defined MEAM || defined STIWEB || defined TERSOFF || defined ANG
 #define THREEBODY
-#endif /* MEAM || TERSOFF || STIWEB */
+#endif /* MEAM || TERSOFF || STIWEB || ANG */
 
 /* define EAM if TBEAM is defined */
 #if defined TBEAM && !defined EAM
@@ -90,6 +90,10 @@
  *  	PAIR, COULOMB, DIPOLE, TERSOFF
  *  	0 ... pair distance
  *
+ *  ANG: 	SLOTS = 2
+ *  	0 ... pair distance
+ *  	1 ... f(r_ij)
+ *
  *  EAM: 	SLOTS = 2
  *  	0 ... pair distance
  *  	1 ... transfer function
@@ -118,10 +122,10 @@
 
 #define SLOTS 1
 
-#if defined EAM || defined STIWEB
+#if defined EAM || defined STIWEB || defined ANG
 #undef SLOTS
 #define SLOTS 2
-#endif /* EAM || STIWEB */
+#endif /* EAM || STIWEB || ANG */
 
 #if defined TBEAM || defined MEAM
 #undef SLOTS
@@ -388,6 +392,11 @@ void  set_force_vector_pointers();
 /* force routines for different potential models [force_xxx.c] */
 #ifdef PAIR
 EXTERN const char interaction_name[5] INIT("PAIR");
+#elif defined ANG && !defined COULOMB
+EXTERN const char interaction_name[8] INIT("PAIRANG");
+#if defined ANG && defined COULOMB
+  init_interaction_name("PAIRANG_ELSTAT");
+#endif // COULOMB ANG
 #elif defined EAM && !defined COULOMB
 #ifndef TBEAM
 EXTERN const char interaction_name[4] INIT("EAM");

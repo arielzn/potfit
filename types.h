@@ -96,7 +96,10 @@ typedef struct {
 #ifdef THREEBODY
 typedef struct {
   double cos;
-#ifdef MEAM
+#ifdef ANG
+  double theta;
+#endif
+#ifdef MEAM || ANG
   int   slot;
   double shift;
   double step;
@@ -274,6 +277,9 @@ typedef struct {
   double last_charge;		/* last charge determined on the basis of charge neutrality */
   double *dp_kappa;		/* parameter kappa */
   int   sw_kappa;		/* switch for kappa-optimization */
+#endif
+#ifdef CSH
+  int   *cweight;		 /* switch for coulomb interaction of pairs */
 #endif
 #ifdef DIPOLE
   double *dp_alpha;		/* polarisability */

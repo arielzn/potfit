@@ -784,6 +784,49 @@ void read_config(char *filename)
 		  atoms[i].neigh[k].step[2] = step;
 #endif /* MEAM */
 
+#ifdef ANG
+		  /* Store slots and stuff for f(r_ij) */
+		  col = paircol + atoms[i].neigh[k].col[0];
+		  atoms[i].neigh[k].col[1] = col;
+		  if (0 == format || 3 == format) {
+		    rr = r - calc_pot.begin[col];
+		    if (rr < 0) {
+		      fprintf(stderr, "The distance %f is smaller than the beginning\n", r);
+		      fprintf(stderr, "of the potential #%d (r_begin=%f).\n", col, calc_pot.begin[col]);
+		      fflush(stdout);
+		      error(1, "short distance in config.c!");
+		    }
+		    istep = calc_pot.invstep[col];
+		    slot = (int)(rr * istep);
+		    shift = (rr - slot * calc_pot.step[col]) * istep;
+		    slot += calc_pot.first[col];
+		    step = calc_pot.step[col];
+		  } else {	/* format == 4 ! */
+		    klo = calc_pot.first[col];
+		    khi = calc_pot.last[col];
+		    /* bisection */
+		    while (khi - klo > 1) {
+		      slot = (khi + klo) >> 1;
+		      if (calc_pot.xcoord[slot] > r)
+			khi = slot;
+		      else
+			klo = slot;
+		    }
+		    slot = klo;
+		    step = calc_pot.xcoord[khi] - calc_pot.xcoord[klo];
+		    shift = (r - calc_pot.xcoord[klo]) / step;
+
+		  }
+		  /* Check if we are at the last index */
+		  if (slot >= calc_pot.last[col]) {
+		    slot--;
+		    shift += 1.0;
+		  }
+		  atoms[i].neigh[k].shift[1] = shift;
+		  atoms[i].neigh[k].slot[1] = slot;
+		  atoms[i].neigh[k].step[1] = step;
+#endif /* ANG */
+
 #ifdef ADP
 		  /* dipole part */
 		  col = paircol + 2 * ntypes + atoms[i].neigh[k].col[0];
@@ -951,6 +994,18 @@ void read_config(char *filename)
 	  atoms[i].angle_part[ijk].cos = ccos;
 
 	  col = 2 * paircol + 2 * ntypes + atoms[i].type;
+#ifdef ANG
+          col = 2 * paircol + atoms[i].type;
+	  /* for safety in the case FP rounding might cause 
+	     a slight higher value */
+          if (ccos > 1.0) {
+            ccos = 1.0;
+          }
+	  else if (ccos < -1.0) {
+            ccos = -1.0;
+          }
+          atoms[i].angle_part[ijk].theta = acos(ccos);
+#endif // ANG
 	  if (0 == format || 3 == format) {
 	    if ((fabs(ccos) - 1.0) > 1e-10) {
 	      printf("%.20f %f %d %d %d\n", ccos, calc_pot.begin[col], col, type1, type2);
@@ -978,8 +1033,8 @@ void read_config(char *filename)
 	  atoms[i].angle_part[ijk].step = step;
 #endif /* MEAM */
 	  ijk++;
-	}			/* third loop over atoms */
-      }				/* second loop over atoms */
+        }			/* third loop over atoms */
+      }                         /* second loop over atoms */
       atoms[i].num_angles = ijk;
       reg_for_free(atoms[i].angle_part, "angular part atom %d", i);
     }				/* first loop over atoms */
@@ -1259,6 +1314,28 @@ void read_config(char *filename)
   }
 #endif /* MEAM */
 
+#ifdef ANG
+  /* f_ij */
+  for (i = 0; i < paircol; i++) {
+    j = paircol + i;
+    apot_table.begin[j] = min * 0.95;
+    opt_pot.begin[j] = min * 0.95;
+    calc_pot.begin[j] = min * 0.95;
+  }
+  /* g_i */
+  /* g_i takes cos(theta) as an argument, so we need to tabulate it only
+     in the range of [-1:1]. Actually we use [-1.1:1.1] to be safe. */
+  for (i = 0; i < ntypes; i++) {
+    j = 2 * paircol + i;
+    apot_table.begin[j] = -1.0;
+    opt_pot.begin[j] = -1.0;
+    calc_pot.begin[j] = -1.0;
+    apot_table.end[j] = 1.0;
+    opt_pot.end[j] = 1.0;
+    calc_pot.end[j] = 1.0;
+  }
+#endif /* ANG */
+
   /* recalculate step, invstep and xcoord for new tables */
   for (i = 0; i < calc_pot.ncols; i++) {
     calc_pot.step[i] = (calc_pot.end[i] - calc_pot.begin[i]) / (APOT_STEPS - 1);
@@ -1486,6 +1563,16 @@ void update_slots(void)
       /* move slot to the right potential */
       atoms[i].angle_part[j].slot += calc_pot.first[col];
 #endif /* MEAM */
+#ifdef ANG
+      col = 2 * paircol + atoms[i].type;
+      rr = atoms[i].angle_part[j].cos + calc_pot.begin[col];
+      atoms[i].angle_part[j].slot = (int)(rr * calc_pot.invstep[col]);
+      atoms[i].angle_part[j].step = calc_pot.step[col];
+      atoms[i].angle_part[j].shift =
+	(rr - atoms[i].angle_part[j].slot * calc_pot.step[col]) * calc_pot.invstep[col];
+      /* move slot to the right potential */
+      atoms[i].angle_part[j].slot += calc_pot.first[col];
+#endif /* ANG */
     }
   }
 #endif /* THREEBODY */

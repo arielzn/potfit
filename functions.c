@@ -68,6 +68,8 @@ void apot_init(void)
   add_pot(exp_decay, 2);
   add_pot(bjs, 3);
   add_pot(parabola, 3);
+  add_pot(harmonic, 2);
+  add_pot(angharmonic, 2);
   add_pot(csw, 4);
   add_pot(universal, 4);
   add_pot(const, 1);
@@ -498,6 +500,30 @@ void bjs_value(double r, double *p, double *f)
 void parabola_value(double r, double *p, double *f)
 {
   *f = (r * r) * p[0] + r * p[1] + p[2];
+}
+
+/****************************************************************
+ *
+ * harmonic potential
+ *
+ ****************************************************************/
+
+void harmonic_value(double r, double *p, double *f)
+{
+  *f = p[0] * (r - p[1]) * (r - p[1]);
+}
+
+/****************************************************************
+ *
+ * angular harmonic potential
+ *
+ ****************************************************************/
+
+void angharmonic_value(double r, double *p, double *f)
+{
+  double theta = acos(r);
+
+  *f = p[0] * (theta - p[1]) * (theta - p[1]);
 }
 
 /****************************************************************

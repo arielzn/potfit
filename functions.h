@@ -48,6 +48,8 @@ void  power_decay_value(double, double *, double *);
 void  exp_decay_value(double, double *, double *);
 void  bjs_value(double, double *, double *);
 void  parabola_value(double, double *, double *);
+void  harmonic_value(double, double *, double *);
+void  angharmonic_value(double, double *, double *);
 void  csw_value(double, double *, double *);
 void  universal_value(double, double *, double *);
 void  const_value(double, double *, double *);

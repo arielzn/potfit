@@ -131,11 +131,11 @@ SHELL = /bin/bash
 # i686-gcc  	32bit GNU Compiler
 #
 #SYSTEM 		= x86_64-icc 	# Use this as fallback
-SYSTEM 		= $(shell uname -m)-icc
+SYSTEM 		= $(shell uname -m)-gcc
 
 # This is the directory where the potfit binary will be moved to.
 # If it is empty, the binary will not be moved.
-BIN_DIR 	= ${HOME}/bin/i386-linux
+BIN_DIR 	= bin_old
 #BIN_DIR 	=
 
 # Base directory of your installation of the MKL or ACML
@@ -381,7 +381,19 @@ POTFITSRC 	= bracket.c brent.c config.c elements.c errors.c forces.c linmin.c \
 		  powell_lsq.c random.c simann.c splines.c utils.c
 
 ifneq (,$(strip $(findstring pair,${MAKETARGET})))
-  POTFITSRC      += force_pair.c
+  ifneq (,$(strip $(findstring ang,${MAKETARGET})))
+    ifneq (,$(strip $(findstring coulomb,${MAKETARGET})))
+      ifneq (,$(strip $(findstring csh,${MAKETARGET})))
+        POTFITSRC	+= force_pairang_elstat_csh.c
+      else
+        POTFITSRC	+= force_pairang_elstat.c
+      endif
+    else
+      POTFITSRC	+= force_pairang.c
+    endif
+  else
+    POTFITSRC	+= force_pair.c
+  endif
 endif
 
 ifneq (,$(strip $(findstring eam,${MAKETARGET})))
@@ -397,8 +409,10 @@ ifneq (,$(strip $(findstring eam,${MAKETARGET})))
 endif
 
 ifneq (,$(strip $(findstring coulomb,${MAKETARGET})))
-  ifeq (,$(strip $(findstring eam,${MAKETARGET})))
-    POTFITSRC      += force_elstat.c
+  ifeq (,$(strip $(findstring ang,${MAKETARGET})))
+    ifeq (,$(strip $(findstring eam,${MAKETARGET})))
+      POTFITSRC      += force_elstat.c
+    endif
   endif
 endif
 
@@ -466,6 +480,12 @@ INTERACTION = 0
 # pair potentials
 ifneq (,$(findstring pair,${MAKETARGET}))
   CFLAGS += -DPAIR
+  ifneq (,$(strip $(findstring ang,${MAKETARGET})))
+    CFLAGS += -DANG
+    ifneq (,$(strip $(findstring csh,${MAKETARGET})))
+      CFLAGS += -DCSH
+    endif
+  endif
   INTERACTION = 1
 endif
 
@@ -486,9 +506,11 @@ endif
 
 # COULOMB
 ifneq (,$(strip $(findstring coulomb,${MAKETARGET})))
-  ifeq (,$(strip $(findstring eam,${MAKETARGET})))
-    ifneq (,$(findstring 1,${INTERACTION}))
-      ERROR += More than one potential model specified
+  ifeq (,$(strip $(findstring pair,${MAKETARGET})))
+    ifeq (,$(strip $(findstring eam,${MAKETARGET})))
+      ifneq (,$(findstring 1,${INTERACTION}))
+        ERROR += More than one potential model specified
+      endif
     endif
   endif
   ifeq (,$(strip $(findstring apot,${MAKETARGET})))
@@ -677,6 +699,9 @@ ifneq (,${BIN_DIR})
 	${MV} $@ ${BIN_DIR} && rm -f $@
   endif
 endif
+	@echo -e "\nCompiled with options"
+	@echo -e "CC=${CC} \nCFLAGS=${CFLAGS} \nLIBS=${LIBS}\n"
+	@echo -e "Building $@ was sucessfull."
 
 # First recursion only set the MAKETARGET Variable
 .DEFAULT:

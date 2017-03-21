@@ -250,6 +250,14 @@ void write_pot_table0(apot_table_t *apt, char *filename)
 #endif /* DIPOLE */
 
   fprintf(outfile, "\n");
+#ifdef CSH
+  fprintf(outfile, "coreshell\n");
+  fprintf(outfile, "coulweight");
+  for (i = 0; i < paircol; i++) {
+    fprintf(outfile, "%d\t ", apt->cweight[i] );
+  }
+  fprintf(outfile, "\n \n");
+#endif //CSH
 #endif /* COULOMB */
 
   /* write globals section */
@@ -352,6 +360,15 @@ void write_pot_table3(pot_table_t *pt, char *filename)
     for (i = 0; i < ntypes; i++)
       fprintf(outfile, " %s", elements[i]);
 #endif /* MEAM */
+#ifdef ANG
+    /* f_ij */
+    for (i = 0; i < ntypes; i++)
+      for (j = i; j < ntypes; j++)
+	fprintf(outfile, " %s-%s", elements[i], elements[j]);
+    /* angl part */
+    for (i = 0; i < ntypes; i++)
+      fprintf(outfile, " %s", elements[i]);
+#endif /* ANG */
   }
   if (have_invar) {
     fprintf(outfile, "\n#I");

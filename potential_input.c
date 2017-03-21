@@ -112,6 +112,10 @@ void read_pot_table(pot_table_t *pt, char *filename)
       npots = 3 * paircol + 2 * ntypes;
 #endif /* ADP */
 
+#ifdef ANG
+      npots = 2 * paircol + ntypes;
+#endif /* ANG */
+
 #ifdef MEAM
       npots = 2 * paircol + 3 * ntypes;
 #endif /* MEAM */
@@ -242,6 +246,9 @@ void read_pot_table(pot_table_t *pt, char *filename)
 #elif defined COULOMB
   if (1) {
     apt->ratio = (double *)malloc(ntypes * sizeof(double));
+#ifdef CSH
+    apt->cweight = (int *)malloc(paircol * sizeof(double));
+#endif
     apt->values = (double **)malloc((size + 5) * sizeof(double *));
     apt->param_name = (char ***)malloc((size + 5) * sizeof(char **));
     apt->pmin = (double **)malloc((size + 5) * sizeof(double *));
@@ -408,6 +415,9 @@ void read_pot_table(pot_table_t *pt, char *filename)
 #endif /* PAIR && APOT */
 #ifdef COULOMB
   reg_for_free(apt->ratio, "apt->ratio");
+#ifdef CSH
+  reg_for_free(apt->cweight, "apt->cweight");
+#endif
   reg_for_free(apt->charge, "apt->charge");
   reg_for_free(apt->dp_kappa, "apt->dp_kappa");
   for (i = 0; i < 5; i++) {
@@ -644,6 +654,31 @@ void read_pot_table0(pot_table_t *pt, apot_table_t *apt, char *filename, FILE *i
   printf(" - Read elstat table\n");
 #endif /* !DIPOLE */
 #endif /* COULOMB */
+
+#ifdef CSH
+  fsetpos(infile, &startpos);
+  /* skip to coreshell section */
+  do {
+    fgetpos(infile, &filepos);
+    fscanf(infile, "%s", buffer);
+  } while (strcmp(buffer, "coreshell") != 0 && !feof(infile));
+  /* check for elstat keyword */
+  if (strcmp("coreshell", buffer) != 0) {
+    error(1, "No coreshell option found in %s.\n", filename);
+  }
+  /* read coulomb weights */
+  fscanf(infile, " %s", buffer);
+  if (strcmp("coulweight", buffer) != 0) {
+    error(1, "Could not read coulweight for coreshell pairs");
+  }
+  for (i = 0; i < paircol; i++) {
+    if (1 > fscanf(infile, "%lf", &apt->ratio[i])) {
+      error(1, "Could not read coulweight for pair #%d\n", i);
+    }
+  }
+  printf(" - Read coulweights\n");
+#endif // CSH
+
 
 #ifdef DIPOLE
   int   ncols = ntypes * (ntypes + 1) / 2;
