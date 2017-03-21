@@ -351,6 +351,14 @@ void read_pot_table(pot_table_t *pt, char *filename)
   }
 #endif /* EAM || ADP || MEAM */
 
+#if defined COULOMB
+  for (i = 0; i < ntypes; i++) {
+    for (j = 0; j < ntypes; j++) {
+      rcut[i * ntypes + j] = MAX(rcut[i * ntypes + j], dp_cut);
+    }
+  }
+#endif  // COULOMB
+
 #ifndef APOT
   double *val;
 
