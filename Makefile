@@ -518,6 +518,9 @@ ifneq (,$(strip $(findstring coulomb,${MAKETARGET})))
   endif
   CFLAGS  += -DCOULOMB
   INTERACTION = 1
+  ifneq (,$(strip $(findstring dsf,${MAKETARGET})))
+    CFLAGS  += -DDSF
+  endif
 endif
 
 # DIPOLE
