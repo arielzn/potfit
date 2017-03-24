@@ -149,7 +149,7 @@ void write_pot_table0(apot_table_t *apt, char *filename)
 	fprintf(outfile, " %s-%s", elements[i], elements[j]);
 #endif /* ADP */
 
-#ifdef MEAM
+#if defined MEAM || defined ANG
     /* f terms */
     for (i = 0; i < ntypes; i++)
       for (j = i; j < ntypes; j++)
@@ -157,7 +157,7 @@ void write_pot_table0(apot_table_t *apt, char *filename)
     /* g terms */
     for (i = 0; i < ntypes; i++)
       fprintf(outfile, " %s", elements[i]);
-#endif /* MEAM */
+#endif /* MEAM || ANG */
 
 #ifdef STIWEB
     /* stiweb_3 terms */
@@ -220,11 +220,11 @@ void write_pot_table0(apot_table_t *apt, char *filename)
 #ifdef CSH
   fprintf(outfile, "\n");
   fprintf(outfile, "coreshell\n");
-  fprintf(outfile, "coulweight");
+  fprintf(outfile, "coulweight  ");
   for (i = 0; i < paircol; i++) {
-    fprintf(outfile, "%d\t ", apt->cweight[i] );
+    fprintf(outfile, "%d ", apt->cweight[i] );
   }
-  fprintf(outfile, "\n \n");
+  fprintf(outfile, "\n");
 #endif //CSH
 
 #ifdef DIPOLE
