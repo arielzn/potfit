@@ -974,120 +974,115 @@ void read_config(char *filename)
     /* For TERSOFF we create a full neighbor list, for all other potentials only a half list */
         
 #ifdef THREEBODY
-
-#ifdef ANG
-        
+#ifndef ANG
   for (i = natoms; i < natoms + count; i++) {
-      nnn = atoms[i].num_neigh;
-      ijk = 0;
-      atoms[i].angle_part = (angle_t *) malloc(sizeof(angle_t));
+    nnn = atoms[i].num_neigh;
+    ijk = 0;
+    atoms[i].angle_part = (angle_t *) malloc(sizeof(angle_t));
+#ifdef TERSOFF
+    for (j = 0; j < nnn; j++) {
+#else
+    for (j = 0; j < nnn - 1; j++) {
+#endif /* TERSOFF */
+      atoms[i].neigh[j].ijk_start = ijk;
+#ifdef TERSOFF
+      for (k = 0; k < nnn; k++) {
+        if (j == k)
+          continue;
+#else
+      for (k = j + 1; k < nnn; k++) {
+#endif /* TERSOFF */
+        atoms[i].angle_part = (angle_t *) realloc(atoms[i].angle_part, (ijk + 1) * sizeof(angle_t));
+        init_angle(atoms[i].angle_part + ijk);
+        ccos =
+          atoms[i].neigh[j].dist_r.x * atoms[i].neigh[k].dist_r.x +
+          atoms[i].neigh[j].dist_r.y * atoms[i].neigh[k].dist_r.y +
+          atoms[i].neigh[j].dist_r.z * atoms[i].neigh[k].dist_r.z;
 
-      for (j = 0; j < nnn - 1; j++) {
-          atoms[i].neigh[j].ijk_start = ijk;
-          col = atoms[i].neigh[j].col[1];
-         
-          if (calc_pot.end[col] > atoms[i].neigh[j].r) {
-              
-              for (k = j + 1; k < nnn; k++) {
-                  col = atoms[i].neigh[k].col[1];
-                  if (calc_pot.end[col] > atoms[i].neigh[k].r) {
-                      
-                      atoms[i].angle_part = (angle_t *) realloc(atoms[i].angle_part, (ijk + 1) * sizeof(angle_t));
-                      init_angle(atoms[i].angle_part + ijk);
-                      ccos =
-                      atoms[i].neigh[j].dist_r.x * atoms[i].neigh[k].dist_r.x +
-                      atoms[i].neigh[j].dist_r.y * atoms[i].neigh[k].dist_r.y +
-                      atoms[i].neigh[j].dist_r.z * atoms[i].neigh[k].dist_r.z;
-                      
-                      atoms[i].angle_part[ijk].cos = ccos;
+        atoms[i].angle_part[ijk].cos = ccos;
 
-                      col = 2 * paircol + atoms[i].type;
-               
-                      if (0 == format || 3 == format) {
-                          if ((fabs(ccos) - 1.0) > 1e-10) {
-                              printf("%.20f %f %d %d %d\n", ccos, calc_pot.begin[col], col, type1, type2);
-                              fflush(stdout);
-                              error(1, "cos out of range, it is strange!");
-                          }
-                      }
-                      ijk++;
-                  }
-              }/* third loop over atoms */
+        col = 2 * paircol + 2 * ntypes + atoms[i].type;
+        if (0 == format || 3 == format) {
+          if ((fabs(ccos) - 1.0) > 1e-10) {
+            printf("%.20f %f %d %d %d\n", ccos, calc_pot.begin[col], col, type1, type2);
+            fflush(stdout);
+            error(1, "cos out of range, it is strange!");
           }
-      }/* second loop over atoms */
-      atoms[i].num_angles = ijk;
-      reg_for_free(atoms[i].angle_part, "angular part atom %d", i);
-  }				/* first loop over atoms */
-
-#else
-      
- for (i = natoms; i < natoms + count; i++) {
-     nnn = atoms[i].num_neigh;
-     ijk = 0;
-     atoms[i].angle_part = (angle_t *) malloc(sizeof(angle_t));
-
-        
-#ifdef TERSOFF
-     for (j = 0; j < nnn; j++) {
-#else
-     for (j = 0; j < nnn - 1; j++) {
-#endif /* TERSOFF */
-          atoms[i].neigh[j].ijk_start = ijk;
-#ifdef TERSOFF
-          for (k = 0; k < nnn; k++) {
-              if (j == k)
-                  continue;
-#else
-          for (k = j + 1; k < nnn; k++) {
-#endif /* TERSOFF */
-              atoms[i].angle_part = (angle_t *) realloc(atoms[i].angle_part, (ijk + 1) * sizeof(angle_t));
-              init_angle(atoms[i].angle_part + ijk);
-              ccos =
-              atoms[i].neigh[j].dist_r.x * atoms[i].neigh[k].dist_r.x +
-              atoms[i].neigh[j].dist_r.y * atoms[i].neigh[k].dist_r.y +
-              atoms[i].neigh[j].dist_r.z * atoms[i].neigh[k].dist_r.z;
-
-              atoms[i].angle_part[ijk].cos = ccos;
-
-              col = 2 * paircol + 2 * ntypes + atoms[i].type;
-              if (0 == format || 3 == format) {
-                  if ((fabs(ccos) - 1.0) > 1e-10) {
-                      printf("%.20f %f %d %d %d\n", ccos, calc_pot.begin[col], col, type1, type2);
-                      fflush(stdout);
-                      error(1, "cos out of range, it is strange!");
-                  }
 #ifdef MEAM
-                  istep = calc_pot.invstep[col];
-                  slot = (int)((ccos + 1) * istep);
-                  shift = ((ccos + 1) - slot * calc_pot.step[col]) * istep;
-                  slot += calc_pot.first[col];
-                  step = calc_pot.step[col];
+          istep = calc_pot.invstep[col];
+          slot = (int)((ccos + 1) * istep);
+          shift = ((ccos + 1) - slot * calc_pot.step[col]) * istep;
+          slot += calc_pot.first[col];
+          step = calc_pot.step[col];
 
-                  /* Don't want lower bound spline knot to be final knot or upper
-                   bound knot will cause trouble since it goes beyond the array */
-                  if (slot >= calc_pot.last[col]) {
-                      slot--;
-                      shift += 1.0;
-                  }
+          /* Don't want lower bound spline knot to be final knot or upper
+           bound knot will cause trouble since it goes beyond the array */
+          if (slot >= calc_pot.last[col]) {
+              slot--;
+              shift += 1.0;
+          }
 #endif /* !MEAM */
-              }
+       }
 #ifdef MEAM
-              atoms[i].angle_part[ijk].shift = shift;
-              atoms[i].angle_part[ijk].slot = slot;
-              atoms[i].angle_part[ijk].step = step;
+       atoms[i].angle_part[ijk].shift = shift;
+       atoms[i].angle_part[ijk].slot = slot;
+       atoms[i].angle_part[ijk].step = step;
 #endif /* MEAM */
-              ijk++;
-          }			/* third loop over atoms */
-      }				/* second loop over atoms */
-      atoms[i].num_angles = ijk;
-      reg_for_free(atoms[i].angle_part, "angular part atom %d", i);
-   }				/* first loop over atoms */
-#endif  /* ANG */
+       ijk++;
+       }			/* third loop over atoms */
+     }				/* second loop over atoms */
+     atoms[i].num_angles = ijk;
+     reg_for_free(atoms[i].angle_part, "angular part atom %d", i);
+  }				/* first loop over atoms */
+#else  /* ANG case */
+  for (i = natoms; i < natoms + count; i++) {
+    nnn = atoms[i].num_neigh;
+    ijk = 0;
+    atoms[i].angle_part = (angle_t *) malloc(sizeof(angle_t));
+
+    for (j = 0; j < nnn - 1; j++) {
+      atoms[i].neigh[j].ijk_start = ijk;
+      col = atoms[i].neigh[j].col[1];
+      /* check that i-j pair is below their f_ij cutoff */
+      if (atoms[i].neigh[j].r < calc_pot.end[col]) {
+
+        for (k = j + 1; k < nnn; k++) {
+          col = atoms[i].neigh[k].col[1];
+          /* check that i-k pair is below their f_ik cutoff */
+          if (calc_pot.end[col] > atoms[i].neigh[k].r) {
+
+            atoms[i].angle_part = (angle_t *) realloc(atoms[i].angle_part, (ijk + 1) * sizeof(angle_t));
+            init_angle(atoms[i].angle_part + ijk);
+            ccos =
+            atoms[i].neigh[j].dist_r.x * atoms[i].neigh[k].dist_r.x +
+            atoms[i].neigh[j].dist_r.y * atoms[i].neigh[k].dist_r.y +
+            atoms[i].neigh[j].dist_r.z * atoms[i].neigh[k].dist_r.z;
+
+            atoms[i].angle_part[ijk].cos = ccos;
+
+            col = 2 * paircol + atoms[i].type;
+
+            if (0 == format || 3 == format) {
+              if ((fabs(ccos) - 1.0) > 1e-10) {
+                printf("%.20f %f %d %d %d\n", ccos, calc_pot.begin[col], col, type1, type2);
+                fflush(stdout);
+                error(1, "cos out of range, it is strange!");
+              }
+            }
+            ijk++;
+          }
+        }/* third loop over atoms */
+      }
+    } /* second loop over atoms */
+    atoms[i].num_angles = ijk;
+    reg_for_free(atoms[i].angle_part, "angular part atom %d", i);
+  }				/* first loop over atoms */
+#endif  /* !ANG */
 #endif /* THREEBODY */
          
-   /* increment natoms and configuration number */
-   natoms += count;
-   nconf++;
+  /* increment natoms and configuration number */
+  natoms += count;
+  nconf++;
  
 } while (!feof(infile));
 
