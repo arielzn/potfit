@@ -972,126 +972,109 @@ void read_config(char *filename)
 
     /* compute the angular part */
     /* For TERSOFF we create a full neighbor list, for all other potentials only a half list */
-        
 #ifdef THREEBODY
-
-#ifdef ANG
-        
-  for (i = natoms; i < natoms + count; i++) {
+    for (i = natoms; i < natoms + count; i++) {
       nnn = atoms[i].num_neigh;
       ijk = 0;
-      atoms[i].angle_part = (angle_t *) malloc(sizeof(angle_t));
-
-      for (j = 0; j < nnn - 1; j++) {
-          atoms[i].neigh[j].ijk_start = ijk;
-          col = atoms[i].neigh[j].col[1];
-         
-          if (calc_pot.end[col] > atoms[i].neigh[j].r) {
-              
-              for (k = j + 1; k < nnn; k++) {
-                  col = atoms[i].neigh[k].col[1];
-                  if (calc_pot.end[col] > atoms[i].neigh[k].r) {
-                      
-                      atoms[i].angle_part = (angle_t *) realloc(atoms[i].angle_part, (ijk + 1) * sizeof(angle_t));
-                      init_angle(atoms[i].angle_part + ijk);
-                      ccos =
-                      atoms[i].neigh[j].dist_r.x * atoms[i].neigh[k].dist_r.x +
-                      atoms[i].neigh[j].dist_r.y * atoms[i].neigh[k].dist_r.y +
-                      atoms[i].neigh[j].dist_r.z * atoms[i].neigh[k].dist_r.z;
-                      
-                      atoms[i].angle_part[ijk].cos = ccos;
-
-                      col = 2 * paircol + atoms[i].type;
-               
-                      if (0 == format || 3 == format) {
-                          if ((fabs(ccos) - 1.0) > 1e-10) {
-                              printf("%.20f %f %d %d %d\n", ccos, calc_pot.begin[col], col, type1, type2);
-                              fflush(stdout);
-                              error(1, "cos out of range, it is strange!");
-                          }
-                      }
-                      ijk++;
-                  }
-              }/* third loop over atoms */
-          }
-      }/* second loop over atoms */
-      atoms[i].num_angles = ijk;
-      reg_for_free(atoms[i].angle_part, "angular part atom %d", i);
-  }				/* first loop over atoms */
-
-#else
-      
- for (i = natoms; i < natoms + count; i++) {
-     nnn = atoms[i].num_neigh;
-     ijk = 0;
-     atoms[i].angle_part = (angle_t *) malloc(sizeof(angle_t));
-
         
+      atoms[i].angle_part = (angle_t *) malloc(sizeof(angle_t));
 #ifdef TERSOFF
-     for (j = 0; j < nnn; j++) {
+      for (j = 0; j < nnn; j++) {
 #else
-     for (j = 0; j < nnn - 1; j++) {
-#endif /* TERSOFF */
-          atoms[i].neigh[j].ijk_start = ijk;
-#ifdef TERSOFF
-          for (k = 0; k < nnn; k++) {
-              if (j == k)
-                  continue;
-#else
-          for (k = j + 1; k < nnn; k++) {
-#endif /* TERSOFF */
+      for (j = 0; j < nnn - 1; j++) {
+#ifdef ANG
+          col = atoms[i].neigh[j].col[1] ;
+          fcutij = calc_pot.end[col] ;
+          if (atoms[i].neigh[j].r < fcutij){
+              for (k = j + 1; k < nnn; k++) {
               atoms[i].angle_part = (angle_t *) realloc(atoms[i].angle_part, (ijk + 1) * sizeof(angle_t));
               init_angle(atoms[i].angle_part + ijk);
               ccos =
               atoms[i].neigh[j].dist_r.x * atoms[i].neigh[k].dist_r.x +
               atoms[i].neigh[j].dist_r.y * atoms[i].neigh[k].dist_r.y +
               atoms[i].neigh[j].dist_r.z * atoms[i].neigh[k].dist_r.z;
-
+              
               atoms[i].angle_part[ijk].cos = ccos;
-
-              col = 2 * paircol + 2 * ntypes + atoms[i].type;
+              
+              col = 2 * paircol + atoms[i].type;
               if (0 == format || 3 == format) {
                   if ((fabs(ccos) - 1.0) > 1e-10) {
                       printf("%.20f %f %d %d %d\n", ccos, calc_pot.begin[col], col, type1, type2);
                       fflush(stdout);
                       error(1, "cos out of range, it is strange!");
                   }
-#ifdef MEAM
-                  istep = calc_pot.invstep[col];
-                  slot = (int)((ccos + 1) * istep);
-                  shift = ((ccos + 1) - slot * calc_pot.step[col]) * istep;
-                  slot += calc_pot.first[col];
-                  step = calc_pot.step[col];
-
-                  /* Don't want lower bound spline knot to be final knot or upper
-                   bound knot will cause trouble since it goes beyond the array */
-                  if (slot >= calc_pot.last[col]) {
-                      slot--;
-                      shift += 1.0;
-                  }
-#endif /* !MEAM */
               }
-#ifdef MEAM
-              atoms[i].angle_part[ijk].shift = shift;
-              atoms[i].angle_part[ijk].slot = slot;
-              atoms[i].angle_part[ijk].step = step;
-#endif /* MEAM */
               ijk++;
           }			/* third loop over atoms */
       }				/* second loop over atoms */
+          atoms[i].num_angles = ijk;
+          reg_for_free(atoms[i].angle_part, "angular part atom %d", i);
+      }				/* first loop over atoms */
+
+              
+          }
+#endif /* TERSOFF */
+	atoms[i].neigh[j].ijk_start = ijk;
+#ifdef TERSOFF
+	for (k = 0; k < nnn; k++) {
+	  if (j == k)
+	    continue;
+#else
+	for (k = j + 1; k < nnn; k++) {
+#endif /* TERSOFF */
+	  atoms[i].angle_part = (angle_t *) realloc(atoms[i].angle_part, (ijk + 1) * sizeof(angle_t));
+	  init_angle(atoms[i].angle_part + ijk);
+	  ccos =
+	    atoms[i].neigh[j].dist_r.x * atoms[i].neigh[k].dist_r.x +
+	    atoms[i].neigh[j].dist_r.y * atoms[i].neigh[k].dist_r.y +
+	    atoms[i].neigh[j].dist_r.z * atoms[i].neigh[k].dist_r.z;
+
+	  atoms[i].angle_part[ijk].cos = ccos;
+
+	  col = 2 * paircol + 2 * ntypes + atoms[i].type;
+#ifdef ANG
+          col = 2 * paircol + atoms[i].type;
+#endif // ANG
+	  if (0 == format || 3 == format) {
+	    if ((fabs(ccos) - 1.0) > 1e-10) {
+	      printf("%.20f %f %d %d %d\n", ccos, calc_pot.begin[col], col, type1, type2);
+	      fflush(stdout);
+	      error(1, "cos out of range, it is strange!");
+	    }
+#ifdef MEAM
+	    istep = calc_pot.invstep[col];
+	    slot = (int)((ccos + 1) * istep);
+	    shift = ((ccos + 1) - slot * calc_pot.step[col]) * istep;
+	    slot += calc_pot.first[col];
+	    step = calc_pot.step[col];
+
+	    /* Don't want lower bound spline knot to be final knot or upper
+	       bound knot will cause trouble since it goes beyond the array */
+	    if (slot >= calc_pot.last[col]) {
+	      slot--;
+	      shift += 1.0;
+	    }
+#endif /* !MEAM */
+	  }
+#ifdef MEAM
+	  atoms[i].angle_part[ijk].shift = shift;
+	  atoms[i].angle_part[ijk].slot = slot;
+	  atoms[i].angle_part[ijk].step = step;
+#endif /* MEAM */
+	  ijk++;
+	}			/* third loop over atoms */
+      }				/* second loop over atoms */
       atoms[i].num_angles = ijk;
       reg_for_free(atoms[i].angle_part, "angular part atom %d", i);
-   }				/* first loop over atoms */
-#endif  /* ANG */
+    }				/* first loop over atoms */
 #endif /* THREEBODY */
-         
-   /* increment natoms and configuration number */
-   natoms += count;
-   nconf++;
- 
-} while (!feof(infile));
 
-     
+    /* increment natoms and configuration number */
+    natoms += count;
+    nconf++;
+
+  } while (!feof(infile));
+
   /* close config file */
   fclose(infile);
 
@@ -1101,15 +1084,13 @@ void read_config(char *filename)
   /* calculate the total number of the atom types */
   na_type = (int **)realloc(na_type, (nconf + 1) * sizeof(int *));
   reg_for_free(na_type, "na_type");
-     
-  
   if (NULL == na_type)
     error(1, "Cannot allocate memory for na_type");
   na_type[nconf] = (int *)malloc(ntypes * sizeof(int));
   reg_for_free(na_type[nconf], "na_type[%d]", nconf);
-     
   for (i = 0; i < ntypes; i++)
     na_type[nconf][i] = 0;
+
   for (i = 0; i < nconf; i++)
     for (j = 0; j < ntypes; j++)
       na_type[nconf][j] += na_type[i][j];
@@ -1157,6 +1138,7 @@ void read_config(char *filename)
     reg_for_free(sphere_centers, "sphere centers");
   }
 #endif /* CONTRIB */
+
   /* mdim is the dimension of the force vector:
      - 3*natoms forces
      - nconf cohesive energies,
@@ -1417,7 +1399,6 @@ void read_config(char *filename)
   if (sh_dist)
     error(1, "Distances too short, last occurence conf %d, see above for details\n", sh_dist);
 
-  
   return;
 }
 
