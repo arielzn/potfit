@@ -125,7 +125,6 @@ double calc_forces(double* xi_opt, double* forces, int flag)
   double charge[g_param.ntypes];
   double sum_charges;
   double dp_kappa;
-  int self;
   double fnval, grad, fnval_tail, grad_tail;
   int type1, type2;
 
@@ -592,8 +591,8 @@ double calc_forces(double* xi_opt, double* forces, int flag)
             forces[n_i + 2] /= FORCE_EPS + atom->absforce;
 #endif  // FWEIGHT
 #if defined(DEBUG)
-            printf(" %d  %d  %d      %f     %f     %f \n " ,
-                     atom->conf,
+            printf("conf: %d  %d  %d      %f     %f     %f \n " ,
+                      atom->conf,
                       i,
                       atom->type,
 	              forces[n_i + 0] + g_config.force_0[n_i + 0],
